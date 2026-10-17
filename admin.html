@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin Task Solution</title>
+<style>
+  :root { --bg:#fbeee2; --surface:#fff8f1; --ink:#1d1b2f; --muted:#6b6577; --line:#e5d3c3; --accent:#d93a21; --ok:#2e9e5b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); padding: 16px 16px 80px; }
+  main { max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
+  h1 { margin: 6px 0 0; font-size: 1.6rem; }
+  h2 { margin: 0 0 10px; font-size: 1.15rem; }
+  .sub { margin: 0; color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  label { display: block; font-weight: 600; font-size: 14px; margin: 10px 0 4px; }
+  input[type=text], input[type=password], textarea { width: 100%; padding: 11px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; font: inherit; color: inherit; }
+  textarea { min-height: 130px; resize: vertical; }
+  input:focus, textarea:focus { outline: 3px solid color-mix(in srgb, var(--accent) 30%, transparent); border-color: var(--accent); }
+  button { font: inherit; cursor: pointer; border-radius: 999px; border: 2px solid var(--ink); background: transparent; color: var(--ink); padding: 10px 18px; font-weight: 600; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.small { padding: 6px 12px; font-size: 14px; }
+  button.danger { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tabs button[aria-selected=true] { background: var(--ink); color: #fff; }
+  .msg { margin-top: 10px; font-size: 14px; min-height: 1.3em; }
+  .msg.ok { color: var(--ok); font-weight: 600; } .msg.err { color: var(--accent); font-weight: 600; }
+  .files { display: grid; gap: 10px; margin: 12px 0; }
+  .file { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: #fff; align-items: start; }
+  .file img, .file .vid { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; background: #eee; display: grid; place-items: center; font-size: 11px; color: var(--muted); }
+  .file input { margin-bottom: 6px; }
+  .file .st { font-size: 13px; color: var(--muted); }
+  .file .st.ok { color: var(--ok); font-weight: 600; } .file .st.err { color: var(--accent); font-weight: 600; }
+  .items { display: grid; gap: 8px; }
+  .item { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+  .item img, .item .vid { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; background: #eee; display: grid; place-items: center; font-size: 10px; }
+  .item b { display: block; overflow-wrap: anywhere; } .item span { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+  details summary { cursor: pointer; font-weight: 600; }
+  ol { padding-left: 20px; margin: 10px 0 0; } li { margin-bottom: 4px; }
+  code { background: #f1e2d3; padding: 1px 6px; border-radius: 6px; font-size: 13px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Admin Task Solution</h1>
+    <p class="sub">Halaman pribadi untuk menambah portofolio, proof, dan testimoni. Jangan bagikan link halaman ini dan token-mu.</p>
+  </header>
+
+  <section class="card">
+    <details id="setup">
+      <summary>1. Sambungkan ke GitHub <span id="connBadge"></span></summary>
+      <label for="token">Token GitHub</label>
+      <input type="password" id="token" autocomplete="off" placeholder="github_pat_...">
+      <div class="row" style="margin-top:6px">
+        <div style="flex:1;min-width:120px"><label for="owner">Nama akun</label><input type="text" id="owner" value="Secrettry"></div>
+        <div style="flex:1;min-width:120px"><label for="repo">Nama repository</label><input type="text" id="repo" value="Tasksolution"></div>
+        <div style="flex:1;min-width:90px"><label for="branch">Branch</label><input type="text" id="branch" value="main"></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="primary" id="saveCfg" type="button">Simpan &amp; tes koneksi</button><button id="forget" type="button" class="small">Hapus token dari perangkat ini</button></div>
+      <div class="msg" id="cfgMsg" role="status"></div>
+      <details style="margin-top:12px"><summary>Cara membuat token (sekali saja)</summary>
+        <ol>
+          <li>Buka GitHub, klik foto profil, lalu <b>Settings</b>.</li>
+          <li>Paling bawah menu kiri: <b>Developer settings</b>, lalu <b>Personal access tokens</b>, lalu <b>Fine-grained tokens</b>.</li>
+          <li>Klik <b>Generate new token</b>. Nama bebas, misalnya <code>admin web</code>. Pilih masa berlaku terpanjang.</li>
+          <li><b>Repository access</b>: pilih <b>Only select repositories</b>, lalu pilih <code>Tasksolution</code>.</li>
+          <li><b>Permissions</b>, lalu <b>Repository permissions</b>, cari <b>Contents</b> dan ubah menjadi <b>Read and write</b>.</li>
+          <li>Klik <b>Generate token</b>, salin tulisan yang diawali <code>github_pat_</code>, lalu tempel di kolom di atas.</li>
+        </ol>
+      </details>
+    </details>
+  </section>
+
+  <section class="card" id="work" hidden>
+    <h2>2. Tambah konten</h2>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="portofolio" aria-selected="true">Portofolio</button>
+      <button role="tab" data-tab="proof" aria-selected="false">Proof</button>
+      <button role="tab" data-tab="testimoni" aria-selected="false">Testimoni</button>
+    </div>
+
+    <div id="paneFiles">
+      <label for="picker" id="pickLabel">Pilih foto atau video</label>
+      <input type="file" id="picker" multiple accept="image/*,video/mp4,video/webm">
+      <div class="files" id="fileList"></div>
+      <div class="row"><button class="primary" id="uploadBtn" type="button" disabled>Upload</button></div>
+      <p class="sub" style="font-size:13px;margin-top:8px">Foto otomatis dikecilkan agar web tetap cepat. Video disarankan di bawah 20 MB.</p>
+    </div>
+
+    <div id="paneTesti" hidden>
+      <label for="tNama">Nama</label><input type="text" id="tNama" placeholder="Contoh: Sabine">
+      <label for="tTeks">Isi testimoni</label><textarea id="tTeks" placeholder="Tempel teks testimoni di sini"></textarea>
+      <div class="row" style="margin-top:12px"><button class="primary" id="addTesti" type="button">Tambah testimoni</button></div>
+    </div>
+    <div class="msg" id="workMsg" role="status"></div>
+  </section>
+
+  <section class="card" id="listCard" hidden>
+    <h2>3. Yang sudah ditambahkan lewat halaman ini</h2>
+    <div class="items" id="items"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = "ts_admin_cfg";
+  var cfg = { token: "", owner: "Secrettry", repo: "Tasksolution", branch: "main" };
+  try { var saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved) cfg = Object.assign(cfg, saved); } catch (e) {}
+  var man = { portofolio: [], proof: [], testimoni: [] }, manSha = null, tab = "portofolio", picked = [];
+
+  function say(el, text, kind) { el.textContent = text || ""; el.className = "msg" + (kind ? " " + kind : ""); }
+  function enc(path) { return path.split("/").map(encodeURIComponent).join("/"); }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  function gh(method, path, body) {
+    var url = "https://api.github.com/repos/" + encodeURIComponent(cfg.owner) + "/" + encodeURIComponent(cfg.repo) + (path ? "/contents/" + enc(path) : "");
+    if (method === "GET" && path) url += "?ref=" + encodeURIComponent(cfg.branch) + "&t=" + Date.now();
+    var headers = { "Authorization": "Bearer " + cfg.token, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+    if (body) headers["Content-Type"] = "application/json";
+    return fetch(url, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined }).then(function (r) {
+      if (r.status === 404 && method === "GET" && path) return null;
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) { var e = new Error((j && j.message) || ("Error " + r.status)); e.status = r.status; throw e; }
+        return j;
+      });
+    });
+  }
+  var b64u = function (str) { return btoa(unescape(encodeURIComponent(str))); };
+  var unb64u = function (b) { return decodeURIComponent(escape(atob(String(b).replace(/\s/g, "")))); };
+
+  function loadMan() {
+    return gh("GET", "manifest.json").then(function (j) {
+      if (!j) { man = { portofolio: [], proof: [], testimoni: [] }; manSha = null; return; }
+      var o = {}; try { o = JSON.parse(unb64u(j.content)); } catch (e) {}
+      man = { portofolio: o.portofolio || [], proof: o.proof || [], testimoni: o.testimoni || [] };
+      manSha = j.sha;
+    });
+  }
+  function saveMan(message, tries) {
+    tries = tries == null ? 2 : tries;
+    var body = { message: message, content: b64u(JSON.stringify(man, null, 2)), branch: cfg.branch };
+    if (manSha) body.sha = manSha;
+    return gh("PUT", "manifest.json", body).then(function (j) { manSha = j.content.sha; }, function (e) {
+      if (tries > 0 && (e.status === 409 || e.status === 422)) {
+        return gh("GET", "manifest.json").then(function (j) { manSha = j ? j.sha : null; return saveMan(message, tries - 1); });
+      }
+      throw e;
+    });
+  }
+
+  /* ---- koneksi ---- */
+  function fillCfg() { $("token").value = cfg.token; $("owner").value = cfg.owner; $("repo").value = cfg.repo; $("branch").value = cfg.branch; }
+  function connect() {
+    say($("cfgMsg"), "Mengecek koneksi...");
+    return gh("GET", "").then(function (j) {
+      if (j.permissions && j.permissions.push === false) throw new Error("Token tidak punya izin menulis. Ubah Contents menjadi Read and write.");
+      return loadMan();
+    }).then(function () {
+      $("work").hidden = false; $("listCard").hidden = false; $("setup").open = false;
+      $("connBadge").textContent = " ✓ tersambung";
+      say($("cfgMsg"), "Tersambung ke " + cfg.owner + "/" + cfg.repo + ".", "ok");
+      renderItems();
+    }).catch(function (e) {
+      $("work").hidden = true; $("listCard").hidden = true; $("setup").open = true; $("connBadge").textContent = "";
+      say($("cfgMsg"), e.status === 401 ? "Token salah atau sudah kedaluwarsa." : e.status === 404 ? "Repository tidak ditemukan atau token belum diberi akses ke repository ini." : (e.message || "Gagal tersambung."), "err");
+    });
+  }
+  $("saveCfg").addEventListener("click", function () {
+    cfg = { token: $("token").value.trim(), owner: $("owner").value.trim(), repo: $("repo").value.trim(), branch: $("branch").value.trim() || "main" };
+    if (!cfg.token) { say($("cfgMsg"), "Isi token dulu.", "err"); return; }
+    try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {}
+    connect();
+  });
+  $("forget").addEventListener("click", function () {
+    cfg.token = ""; try { localStorage.removeItem(KEY); } catch (e) {}
+    $("token").value = ""; $("work").hidden = true; $("listCard").hidden = true; $("setup").open = true; $("connBadge").textContent = "";
+    say($("cfgMsg"), "Token dihapus dari perangkat ini.", "ok");
+  });
+
+  /* ---- tab ---- */
+  $("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-tab]"); if (!b) return;
+    tab = b.getAttribute("data-tab");
+    Array.prototype.forEach.call($("tabs").children, function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); });
+    $("paneFiles").hidden = tab === "testimoni"; $("paneTesti").hidden = tab !== "testimoni";
+    $("picker").accept = tab === "portofolio" ? "image/*,video/mp4,video/webm" : "image/*";
+    $("pickLabel").textContent = tab === "portofolio" ? "Pilih foto atau video" : "Pilih foto proof (screenshot chat)";
+    picked = []; $("picker").value = ""; renderPicked(); say($("workMsg"), "");
+  });
+
+  /* ---- pilih file ---- */
+  function cleanName(n) { return n.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim(); }
+  function slug(n) { return (n.replace(/\.[^.]+$/, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "file").slice(0, 40); }
+  $("picker").addEventListener("change", function () {
+    picked = Array.prototype.map.call($("picker").files, function (f) { return { file: f, title: cleanName(f.name), tag: "", st: "", kind: "" }; });
+    renderPicked();
+  });
+  function renderPicked() {
+    var box = $("fileList"); box.textContent = "";
+    picked.forEach(function (p, i) {
+      var row = document.createElement("div"); row.className = "file";
+      var isVid = /^video\//.test(p.file.type);
+      var th;
+      if (isVid) { th = document.createElement("div"); th.className = "vid"; th.textContent = "VIDEO"; }
+      else { th = document.createElement("img"); th.alt = ""; th.src = URL.createObjectURL(p.file); }
+      var f = document.createElement("div");
+      var ti = document.createElement("input"); ti.type = "text"; ti.value = p.title; ti.placeholder = "Judul"; ti.setAttribute("aria-label", "Judul");
+      ti.addEventListener("input", function () { p.title = ti.value; });
+      f.appendChild(ti);
+      if (tab === "portofolio") {
+        var tg = document.createElement("input"); tg.type = "text"; tg.value = p.tag; tg.placeholder = "Keterangan singkat (opsional)"; tg.setAttribute("aria-label", "Keterangan");
+        tg.addEventListener("input", function () { p.tag = tg.value; });
+        f.appendChild(tg);
+      }
+      var st = document.createElement("div"); st.className = "st"; st.id = "st" + i;
+      st.textContent = (p.file.size / 1048576).toFixed(1) + " MB" + (isVid && p.file.size > 20971520 ? " (besar, bisa lambat dibuka)" : "");
+      f.appendChild(st);
+      row.appendChild(th); row.appendChild(f); box.appendChild(row);
+    });
+    $("uploadBtn").disabled = !picked.length;
+  }
+
+  /* ---- kompres foto ---- */
+  function compress(file, maxSide, q) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, maxSide / Math.max(w, h));
+        var c = document.createElement("canvas"); c.width = Math.round(w * s); c.height = Math.round(h * s);
+        var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { b ? resolve(b) : reject(new Error("Gagal memproses foto")); }, "image/jpeg", q);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("Format foto tidak didukung (coba JPG atau PNG)")); };
+      img.src = url;
+    });
+  }
+  function toB64(blob) {
+    return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(",")[1]); }; r.onerror = function () { rej(new Error("Gagal membaca file")); }; r.readAsDataURL(blob); });
+  }
+
+  /* ---- upload ---- */
+  $("uploadBtn").addEventListener("click", function () {
+    if (!picked.length) return;
+    var btn = $("uploadBtn"), kind = tab, dir = kind === "portofolio" ? "portofolio" : "proof", okCount = 0, stamp = Date.now();
+    btn.disabled = true; say($("workMsg"), "Mengunggah, jangan tutup halaman ini...");
+    var chain = Promise.resolve();
+    picked.forEach(function (p, i) {
+      chain = chain.then(function () {
+        var st = $("st" + i), isVid = /^video\//.test(p.file.type);
+        st.className = "st"; st.textContent = isVid ? "Mengunggah video..." : "Memproses foto...";
+        var prep = isVid ? Promise.resolve(p.file) : compress(p.file, kind === "proof" ? 1800 : 1600, 0.84);
+        return prep.then(function (blob) {
+          st.textContent = "Mengunggah...";
+          return toB64(blob).then(function (b64) {
+            var ext = isVid ? (/webm/.test(p.file.type) ? "webm" : "mp4") : "jpg";
+            var path = dir + "/" + stamp + "-" + i + "-" + slug(p.file.name) + "." + ext;
+            return gh("PUT", path, { message: "Tambah " + dir + ": " + (p.title || path), content: b64, branch: cfg.branch }).then(function () {
+              var item = { file: path, title: p.title.trim() };
+              if (kind === "portofolio") { item.tag = p.tag.trim(); item.type = isVid ? "video" : "image"; }
+              man[kind].push(item); okCount++;
+              st.className = "st ok"; st.textContent = "Terunggah";
+            });
+          });
+        }).catch(function (e) { st.className = "st err"; st.textContent = "Gagal: " + (e.message || "error"); }).then(function () { return sleep(700); });
+      });
+    });
+    chain.then(function () {
+      if (!okCount) throw new Error("Tidak ada file yang berhasil diunggah.");
+      return saveMan("Perbarui daftar " + dir);
+    }).then(function () {
+      say($("workMsg"), okCount + " file berhasil ditambahkan. Web akan ter-update dalam 1 sampai 2 menit.", "ok");
+      picked = []; $("picker").value = ""; $("uploadBtn").disabled = true; renderItems();
+      setTimeout(function () { $("fileList").textContent = ""; }, 2500);
+    }).catch(function (e) {
+      say($("workMsg"), e.message || "Gagal menyimpan daftar.", "err"); btn.disabled = false;
+    });
+  });
+
+  /* ---- testimoni ---- */
+  $("addTesti").addEventListener("click", function () {
+    var n = $("tNama").value.trim(), t = $("tTeks").value.trim();
+    if (!n || !t) { say($("workMsg"), "Isi nama dan isi testimoni dulu.", "err"); return; }
+    var btn = $("addTesti"); btn.disabled = true; say($("workMsg"), "Menyimpan...");
+    man.testimoni.push({ nama: n, teks: t });
+    saveMan("Tambah testimoni: " + n).then(function () {
+      $("tNama").value = ""; $("tTeks").value = "";
+      say($("workMsg"), "Testimoni ditambahkan. Web akan ter-update dalam 1 sampai 2 menit.", "ok"); renderItems();
+    }).catch(function (e) { man.testimoni.pop(); say($("workMsg"), e.message || "Gagal menyimpan.", "err"); })
+      .then(function () { btn.disabled = false; });
+  });
+
+  /* ---- daftar & hapus ---- */
+  function rawUrl(f) { return "https://raw.githubusercontent.com/" + cfg.owner + "/" + cfg.repo + "/" + cfg.branch + "/" + enc(f); }
+  function renderItems() {
+    var box = $("items"); box.textContent = "";
+    var names = { portofolio: "Portofolio", proof: "Proof", testimoni: "Testimoni" }, total = 0;
+    ["portofolio", "proof", "testimoni"].forEach(function (k) {
+      man[k].slice().reverse().forEach(function (it, ri) {
+        var idx = man[k].length - 1 - ri; total++;
+        var row = document.createElement("div"); row.className = "item";
+        var th;
+        if (k === "testimoni" || it.type === "video") { th = document.createElement("div"); th.className = "vid"; th.textContent = k === "testimoni" ? "TESTI" : "VIDEO"; }
+        else { th = document.createElement("img"); th.alt = ""; th.src = rawUrl(it.file); }
+        var info = document.createElement("div");
+        var b = document.createElement("b"); b.textContent = k === "testimoni" ? it.nama : (it.title || it.file);
+        var sp = document.createElement("span"); sp.textContent = names[k] + (k === "testimoni" ? " · " + (it.teks || "").slice(0, 60) : "");
+        info.appendChild(b); info.appendChild(sp);
+        var del = document.createElement("button"); del.type = "button"; del.className = "small danger"; del.textContent = "Hapus";
+        del.addEventListener("click", function () { removeItem(k, idx, del); });
+        row.appendChild(th); row.appendChild(info); row.appendChild(del); box.appendChild(row);
+      });
+    });
+    if (!total) { var p = document.createElement("p"); p.className = "sub"; p.textContent = "Belum ada konten yang ditambahkan lewat halaman ini."; box.appendChild(p); }
+  }
+  function removeItem(k, idx, btn) {
+    var it = man[k][idx];
+    if (!it || !confirm("Hapus " + (k === "testimoni" ? "testimoni " + it.nama : (it.title || it.file)) + "?")) return;
+    btn.disabled = true; say($("workMsg"), "Menghapus...");
+    var step = Promise.resolve();
+    if (k !== "testimoni") {
+      step = gh("GET", it.file).then(function (j) {
+        if (j && j.sha) return gh("DELETE", it.file, { message: "Hapus " + it.file, sha: j.sha, branch: cfg.branch });
+      });
+    }
+    step.then(function () { man[k].splice(idx, 1); return saveMan("Perbarui daftar " + k); })
+      .then(function () { say($("workMsg"), "Dihapus. Web akan ter-update dalam 1 sampai 2 menit.", "ok"); renderItems(); })
+      .catch(function (e) { btn.disabled = false; say($("workMsg"), e.message || "Gagal menghapus.", "err"); });
+  }
+
+  fillCfg();
+  if (cfg.token) connect(); else $("setup").open = true;
+})();
+</script>
+</body>
+</html>

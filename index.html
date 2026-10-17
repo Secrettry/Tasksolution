@@ -880,7 +880,7 @@ body { padding: 0; }
         el.appendChild(vt);
         autoPlayWhenVisible(vd);
       } else {
-        el.innerHTML = '<img alt="">'; el.firstChild.src = src; el.firstChild.alt = label;
+        el.innerHTML = '<img alt="" loading="lazy" decoding="async">'; el.firstChild.src = src; el.firstChild.alt = label;
       }
       el.addEventListener("click", function () { openLb(src, label); });
     } else {
@@ -890,9 +890,14 @@ body { padding: 0; }
   }
 
   /* Proof */
+  var PORTFOLIO_BASE = PORTFOLIO.slice();
   var pg = $("proofGrid");
-  var total = Math.max(3, CFG.proofs.length);
-  for (var i = 0; i < total; i++) pg.appendChild(slotEl(CFG.proofs[i], "Proof #" + (i + 1)));
+  function renderProofs(list) {
+    pg.textContent = "";
+    var total = Math.max(3, list.length);
+    for (var i = 0; i < total; i++) pg.appendChild(slotEl(list[i], "Proof #" + (i + 1)));
+  }
+  renderProofs(CFG.proofs);
 
   /* Testimoni: satu kartu per orang. Tambah orang baru = tambah satu baris di TESTI */
   var TESTI = [
@@ -901,7 +906,9 @@ body { padding: 0; }
     { nama: "Chizumi Huizhen", teks: "100/10, pelayanan nya keren banget! penataan kata sesuai dengan request ku <3 admin cepat tanggap dan komunikasi nya kuat dengan customer. Bakal repurchase pasti! thanks a lot and have a pleasant day yaa kak" }
   ];
   var tb = $("testi");
-  TESTI.forEach(function (t) {
+  function renderTesti(list) {
+  tb.textContent = "";
+  list.forEach(function (t) {
     var q = document.createElement("div"); q.className = "quote";
     var head = document.createElement("div"); head.className = "qhead";
     var av = document.createElement("span"); av.className = "avatar"; av.textContent = t.nama.charAt(0).toUpperCase();
@@ -914,6 +921,8 @@ body { padding: 0; }
     q.appendChild(head); q.appendChild(bq);
     tb.appendChild(q);
   });
+  }
+  renderTesti(TESTI);
   var more = document.createElement("div"); more.className = "testi-more";
   var tg = document.createElement("a");
   tg.className = "btn primary small"; tg.href = CFG.tgTesti; tg.target = "_blank"; tg.rel = "noopener"; tg.textContent = "Testimoni lainnya di Telegram";
@@ -922,20 +931,27 @@ body { padding: 0; }
 
   /* Portofolio */
   var pf = $("pfGrid");
-  PORTFOLIO.forEach(function (p) {
-    var f = document.createElement("figure"); f.className = "pf"; f.style.margin = "0";
-    f.appendChild(slotEl(p.src, p.title, "", p.video || ""));
-    var cap = document.createElement("div"); cap.className = "cap";
-    cap.innerHTML = "<b></b><span></span>";
-    cap.firstChild.textContent = p.title; cap.lastChild.textContent = p.tag;
-    f.appendChild(cap);
-    pf.appendChild(f);
-  });
-  for (var k = PORTFOLIO.length; k < 3; k++) {
-    var ph = document.createElement("div"); ph.className = "pf";
-    ph.appendChild(slotEl("", "Portofolio #" + (k + 1)));
-    pf.appendChild(ph);
+  function renderPortfolio() {
+    pf.textContent = "";
+    PORTFOLIO.forEach(function (p) {
+      var f = document.createElement("figure"); f.className = "pf"; f.style.margin = "0";
+      f.appendChild(slotEl(p.src, p.title, "", p.video || ""));
+      var cap = document.createElement("div"); cap.className = "cap";
+      cap.innerHTML = "<b></b><span></span>";
+      cap.firstChild.textContent = p.title; cap.lastChild.textContent = p.tag;
+      f.appendChild(cap);
+      pf.appendChild(f);
+    });
+    for (var k = PORTFOLIO.length; k < 3; k++) {
+      var ph = document.createElement("div"); ph.className = "pf";
+      ph.appendChild(slotEl("", "Portofolio #" + (k + 1)));
+      pf.appendChild(ph);
+    }
+    var nv = PORTFOLIO.filter(function (p) { return p.video; }).length, ni = PORTFOLIO.length - nv;
+    var pc = $("pfCount");
+    if (pc) pc.textContent = PORTFOLIO.length ? ni + " foto" + (nv ? " · " + nv + " video" : "") : "Segera ditambahkan";
   }
+  renderPortfolio();
 
   /* Form order */
   var sel = $("o-layanan");
@@ -1083,6 +1099,23 @@ body { padding: 0; }
       });
   }
   loadOrders();
+
+  /* Konten tambahan dari halaman admin (manifest.json) */
+  fetch("manifest.json?t=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("x"); return r.json(); })
+    .then(function (m) {
+      var url = function (f) { return String(f).split("/").map(encodeURIComponent).join("/"); };
+      var np = (m.portofolio || []).slice().reverse().filter(function (x) { return x && x.file; }).map(function (x) {
+        var u = url(x.file);
+        return x.type === "video" ? { video: u, src: u, title: x.title || "Video", tag: x.tag || "Video" } : { src: u, title: x.title || "Portofolio", tag: x.tag || "" };
+      });
+      var nr = (m.proof || []).slice().reverse().filter(function (x) { return x && x.file; }).map(function (x) { return url(x.file); });
+      var nt = (m.testimoni || []).slice().reverse().filter(function (x) { return x && x.nama && x.teks; });
+      if (np.length) { PORTFOLIO = np.concat(PORTFOLIO_BASE); renderPortfolio(); }
+      if (nr.length) renderProofs(nr.concat(CFG.proofs));
+      if (nt.length) renderTesti(nt.concat(TESTI));
+    })
+    .catch(function () {});
 
   /* Kritik & saran anonim: kirim ke Google Form lewat form + iframe tersembunyi */
   var fbFrame = document.createElement("iframe");
